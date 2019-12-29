@@ -1,0 +1,42 @@
+#!/usr/bin/python3
+
+import binascii
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-hex', help = 'get the hex value of input')
+parser.add_argument('-bin', help = 'get the bin value of input')
+parser.add_argument('-bh', '--bin_hex', help = 'get both values (bin, hex)')
+args = parser.parse_args()
+
+def to_bin():
+	get_inp = inp_
+	try:
+		int_bin = str(bin(int(get_inp)))[2:]
+		print(f"int {get_inp} to bin = ", int_bin)
+	except:
+		str_bin = str(bin(int(binascii.hexlify(get_inp.encode()),base=16)))[2:]
+		print(f"str {get_inp} to bin = ", str_bin)
+
+def to_hex():
+	get_inp = inp_
+	try:
+		int_hex = hex(int(get_inp))[2:]
+		print(f"int {get_inp} to hex = ", int_hex)
+	except:
+		str_hex = binascii.hexlify(get_inp.encode()).decode()
+		print(f"str {get_inp} to hex = ", str_hex)
+
+
+if args.bin_hex:
+	inp_ = args.bin_hex
+	to_bin()
+	to_hex()
+
+elif args.bin:
+	inp_ = args.bin
+	to_bin()
+
+elif args.hex:
+	inp_ = args.hex
+	to_hex()
