@@ -5,6 +5,9 @@ import time
 
 ips = []
 
+subprocess.Popen(f'echo "[[ Report ]]\n\n"> report_checking_actions', shell=True, stdin=subprocess.PIPE,
+                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
 
 def app_():
     subprocess.Popen('sudo netstat -atup  > netstate_log.txt', shell=True, stdin=subprocess.PIPE,
@@ -17,16 +20,13 @@ def app_():
             line_list = [i for i in line_list if i != '']
             lines.append(line_list)
 
-    subprocess.Popen(f'echo "[[ Report ]]\n\n"> report_checking_actions', shell=True, stdin=subprocess.PIPE,
-                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
     print("************\nChecked ips : ", ips)
 
     counter = 0
     for i in lines:
         if len(i) == 8 and '[::]' not in i[4]:
             x = i[4].split(":")
-            if x[0] not in ips and x[0] != "0.0.0.0":
+            if x[0] not in ips and x[0] != "0.0.0.0" and x[0] != 'localhost':
                 counter += 1
                 ips.append(x[0])
 
@@ -35,13 +35,13 @@ def app_():
     else:
         print('None new ip interact to check ...')
         return
-    for i in range(1, counter+1):
+    for i in range(1, counter + 1):
         ip = ips[-i]
         print(f"Checking {ip}")
         try:
             check_output = subprocess.check_output(f"amispammer -d {ip}", shell=True, stdin=subprocess.PIPE,
                                                    stderr=subprocess.PIPE)
-        except:
+        except subprocess.CalledProcessError:
             check_output = subprocess.check_output(f"amispammer -i {ip}", shell=True, stdin=subprocess.PIPE,
                                                    stderr=subprocess.PIPE)
         for line_o in check_output.decode().split('\n'):
@@ -59,13 +59,12 @@ def app_():
                 shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             print("----------> Blocked IP : ", spam_ip)
+        else:
+            subprocess.Popen(
+                f'echo "{lines[2].split(":")[1][1:]} .. is Safe" >> report_checking_actions',
+                shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         subprocess.Popen('echo " \n              **********************************'
                          '************************ \n" >> report_checking_actions', shell=True, stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    if not ips:
-        subprocess.Popen('echo "No communication with Global ips, maybe there is a network problem or you are not '
-                         'using any .." >> report_checking_actions', shell=True, stdin=subprocess.PIPE,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
