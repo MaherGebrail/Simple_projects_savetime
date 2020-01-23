@@ -12,14 +12,16 @@ subprocess.Popen(f'echo "[[ Report ]]\n\n"> report_checking_actions', shell=True
 def app_():
     subprocess.Popen('sudo netstat -atup  > netstate_log.txt', shell=True, stdin=subprocess.PIPE,
                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    with open('netstate_log.txt', 'r') as f:
-        f = f.readlines()
-        lines = []
-        for line in f[2:]:
-            line_list = line.split(" ")
-            line_list = [i for i in line_list if i != '']
-            lines.append(line_list)
-
+    try:
+        with open('netstate_log.txt', 'r') as f:
+            f = f.readlines()
+            lines = []
+            for line in f[2:]:
+                line_list = line.split(" ")
+                line_list = [i for i in line_list if i != '']
+                lines.append(line_list)
+    except FileNotFoundError:
+        return
     print("************\nChecked ips : ", ips)
 
     counter = 0
@@ -32,6 +34,7 @@ def app_():
 
     if counter > 0:
         print("\n**********\nChecking Ips : ", ips[-counter:])
+        pass
     else:
         print('None new ip interact to check ...')
         return
