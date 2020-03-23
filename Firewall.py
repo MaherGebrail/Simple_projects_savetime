@@ -6,15 +6,19 @@ import json
 
 
 def start_():
-    """it's create the log file, or read it if existed the """
+    """it creates the log file, or read it if existed  """
     ips_ = {"checked ips": [],
             "checking ips": [],
             "blacklisted": []}
     if os.path.isfile("Ips_log.json"):
         with open("Ips_log.json", "r") as f:
             ips = json.load(f)
-            if not ips:
-                ips = ips_
+            subprocess.Popen(f"sudo iptables -F", shell=True, stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            for bip in ips['blacklisted']:
+                subprocess.Popen(f"sudo iptables -A INPUT -s {bip} -j DROP", shell=True, stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
     else:
         with open("Ips_log.json", "w") as f:
             ips = ips_
@@ -23,9 +27,12 @@ def start_():
     return ips
 
 
+ips = start_()
+
+
 def app_():
     """It blocks the server's ip , not the host name, so may block some domains if they are attached to poisoned ip """
-    ips = start_()
+
     f = subprocess.check_output('sudo netstat -atupn ', shell=True,
                                 stdin=subprocess.PIPE, stderr=subprocess.PIPE).decode()
 
@@ -42,16 +49,12 @@ def app_():
                 ips["checking ips"].append(x[0])
 
     if ips["checking ips"]:
-        print("\n**********\nChecking Ips : ", ips["checking ips"])
         with open('Ips_log.json', 'w') as f:
             json.dump(ips, f)
     else:
-        print('None new ip interact to check ...')
         return
 
     for ip in ips["checking ips"]:
-        print(f"Checking {ip}")
-
         check_output = subprocess.check_output(f"amispammer -i {ip}", shell=True, stdin=subprocess.PIPE,
                                                stderr=subprocess.PIPE)
 
@@ -60,18 +63,48 @@ def app_():
 
         if 'REASON' in check_output.decode():
             spam_ip = lines[2].split(":")[1]
-            # the change in iptables not permanent, so save it or ignore before rebooting the system .. it's up to you
             subprocess.Popen(f"sudo iptables -A INPUT -s {spam_ip} -j DROP", shell=True, stdin=subprocess.PIPE,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-            print("----------> Blocked IP : ", spam_ip)
             ips["blacklisted"].append(spam_ip)
     ips["checking ips"] = []
     with open("Ips_log.json", "w") as f:
         json.dump(ips, f)
 
 
+checkIPTABLES = True
+
+
+def check_iptables():
+    """Check if all blocked ips in iptables at the start of the program"""
+    getTables = subprocess.check_output('sudo iptables -L --line-numbers', shell=True,
+                                        stderr=subprocess.PIPE, stdin=subprocess.PIPE).decode().split("\n")
+    last_number = 0
+    for i in getTables:
+        if len(i) >= 1:
+            if i[0].isdigit():
+                number = ""
+                for num in i:
+                    if num.isdigit():
+                        number = number+str(num)
+                    else:
+                        break
+                if number:
+                    if int(number) > last_number:
+                        last_number = int(number)
+
+    with open("Ips_log.json", "r") as f:
+        ips = json.load(f)
+        gotBlacklisted = len(ips['blacklisted'])
+
+    if gotBlacklisted == last_number:
+        return False
+    else:
+        start_()
+        return True
+
+
 while True:
     app_()
-    print("SLEEPING ....")
+    if checkIPTABLES:
+        checkIPTABLES = check_iptables()
     time.sleep(1)
